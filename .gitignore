@@ -1,0 +1,9 @@
+# Folders
+.venv/
+.idea/
+.vscode/
+__pycache__/
+
+
+# Files
+.env

@@ -3,10 +3,11 @@ import sqlite3
 from datetime import datetime
 from utils import jalali
 import asyncio
+import json
 from dotenv import load_dotenv
 from telebot.async_telebot import AsyncTeleBot
 from telebot import TeleBot, types
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, WebAppInfo, Message, ReplyKeyboardMarkup, KeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, WebAppInfo, Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
 # ------------------------------------------------------------------------------
 # Initials
@@ -160,11 +161,70 @@ def adjust_year(
 # Handling data from the mini-app
 @bot.message_handler(content_types=['web_app_data'])
 async def handle_web_app_data(message):
-    print(message.web_app_data.data)
-    await bot.send_message(
-        chat_id=message.chat.id,
-        text=f"تاریخ انتخابی شما: {message.web_app_data.data}"
-    )
+    received_data = message.web_app_data.data    
+    try:
+        
+        chat_id = message.chat.id
+        data = json.loads(received_data)
+        date = data.get("date")
+        birth_year, birth_month, birth_day = date.split("/")
+        gender = data.get("gender")
+        
+        await bot.send_message(
+            chat_id=message.chat.id,
+            text=f"📝 اطلاعات دریافت‌ شده:\n- تاریخ تولد: {date}\n- جنسیت: {'مرد' if gender == 'male' else 'زن'}"
+        )
+        
+        # Validate The Date
+        if not is_valid_date(int(birth_year), int(birth_month), int(birth_day)):
+            await bot.send_message(
+                chat_id=chat_id, 
+                text="تاریخ وارد شده اشتباه است. لطفا تاریخ را به صورت صحیح وارد کن!",
+            )
+            await send_decade_buttons(chat_id)
+            return
+
+        # Convert
+        birth_year_g, birth_month_g, birth_day_g = jalali.Persian(
+            (int(birth_year), int(birth_month), int(birth_day))
+        ).gregorian_tuple()
+        
+        # Adjust the year and calculate the Kua number
+        adjusted_year = adjust_year(birth_year_g, birth_month_g, birth_day_g)
+        kua_number = calculate_kua_number(adjusted_year, gender)
+    
+        # Send Kua Number Result
+        await bot.send_photo(
+            chat_id=chat_id,
+            photo=open(f"data/img/kua_{kua_number}.png", "rb"),
+            caption=f"عدد کوا شما {kua_number} می‌باشد!",
+            parse_mode="HTML"
+        )
+
+
+        # Save Information To Database
+        set_info_to_kua(
+            user_id=message.chat.id,
+            first_name=message.chat.first_name,
+            last_name=message.chat.last_name,
+            gender=gender,
+            birth_date=f"{int(birth_year):04d}-{int(birth_month):02d}-{int(birth_day):02d}",
+            kua_number=kua_number
+        )
+
+
+    # # Clear user data after calculation
+    # user_kua_data.pop(chat_id, None)
+    # await bot.answer_callback_query(callback_query_id=call.id)
+        
+        
+      
+    except json.JSONDecodeError:
+        await bot.send_message(
+            chat_id=message.chat.id,
+            text=f"📝 اطلاعات دریافت‌شده:\n{received_data}"
+        )
+
     # """
     # Handles the data sent from the mini-app.
     # """
@@ -186,24 +246,27 @@ async def handle_web_app_data(message):
 # ------------------------------------------------------------------------------
 
 
-@bot.message_handler(commands=['LCLU'])
-async def launch_miniapp(message: Message):
-    # Define the URL for the mini-app (color or birthday app)
-    COLOR_APP_URL = "https://58d7-5-160-41-126.ngrok-free.app/"  # Replace with the actual URL
+# @bot.message_handler(commands=['LCLU'])
+# async def launch_miniapp(message: Message):
+#     # Define the URL for the mini-app (color or birthday app)
+#     COLOR_APP_URL = "https://ca04-46-254-106-22.ngrok-free.app"  # Replace with the actual URL
 
-    # Create Inline Keyboard with one button for the desired mini-app
-    inline_keyboard = InlineKeyboardMarkup()
-    inline_keyboard.add(InlineKeyboardButton("Launch Color Picker", web_app=WebAppInfo(COLOR_APP_URL)))
+#     # Create Inline Keyboard with one button for the desired mini-app
+#     inline_keyboard = InlineKeyboardMarkup()
+#     inline_keyboard.add(InlineKeyboardButton("Launch Color Picker", web_app=WebAppInfo(COLOR_APP_URL)))
     
-    # Alternatively, if you want to launch the birthday app:
-    # inline_keyboard.add(InlineKeyboardButton("Launch Birthday Picker", web_app=WebAppInfo(BIRTHDAY_APP_URL)))
+#     # Alternatively, if you want to launch the birthday app:
+#     # inline_keyboard.add(InlineKeyboardButton("Launch Birthday Picker", web_app=WebAppInfo(BIRTHDAY_APP_URL)))
 
-    # Send the message with the inline button
-    await bot.send_message(
-        chat_id=message.chat.id,
-        text="You triggered the /LCLU command! Now choose the mini-app:",
-        reply_markup=inline_keyboard
-    )
+#     # Send the message with the inline button
+#     await bot.send_message(
+#         chat_id=message.chat.id,
+#         text="You triggered the /LCLU command! Now choose the mini-app:",
+#         reply_markup=inline_keyboard
+#     )
+
+
+
 
 
 
@@ -211,13 +274,11 @@ async def launch_miniapp(message: Message):
 # Handle /start Command
 @bot.message_handler(commands=['start'])
 async def send_welcome(message):
-    # WEB_URL = "https://58d7-5-160-41-126.ngrok-free.app/" 
-    # WEB_URL2 = "https://www.google.com" 
-    # reply_keyboard_markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    # reply_keyboard_markup.row(
-    #     KeyboardButton("LCLU", web_app=WebAppInfo(WEB_URL)),
-    #     KeyboardButton("Google", web_app=WebAppInfo(WEB_URL2)),
-    # )
+    WEB_URL = "https://ca04-46-254-106-22.ngrok-free.app" 
+    reply_keyboard_markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    reply_keyboard_markup.row(
+        KeyboardButton("محاسبه عدد کوا", web_app=WebAppInfo(WEB_URL)),
+    )
 
     # inline_keyboard_markup = InlineKeyboardMarkup()
     # inline_keyboard_markup.row(InlineKeyboardButton('Start MiniApp', web_app=WebAppInfo(WEB_URL)))
@@ -231,11 +292,11 @@ async def send_welcome(message):
             "خیلی خوشحالیم که به جمع ما پیوستی! اینجا می‌تونی کارهای خیلی جالبی انجام بدی. لیست دستورهای ما رو ببین و هرکدوم رو که دوست داشتی انتخاب کن یا از منو استفاده کن.\n\n"
             "لیست دستورهای ما:\n\n"
             "<b>\u200F /start:</b> صفحه اصلی بات\n\n"
-            "<b>\u200F /kua_number :</b> محاسبه عدد کوا \n\n"
             "<b>\u200F /help :</b> راهنمایی و توضیحات در مورد دستورها\n\n"
+            "- \u200F برای <b>محاسبه عدد کوا</b> بر روی دکمه پایین صفحه کلیک کنید!\n\n"
         ),
         parse_mode="HTML",
-        # reply_markup=reply_keyboard_markup
+        reply_markup=reply_keyboard_markup
     )
     
     # await bot.reply_to(

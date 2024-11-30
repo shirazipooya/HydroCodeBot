@@ -6,8 +6,7 @@ import asyncio
 from dotenv import load_dotenv
 from telebot.async_telebot import AsyncTeleBot
 from telebot import TeleBot, types
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, WebAppInfo
-
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, WebAppInfo, Message, ReplyKeyboardMarkup, KeyboardButton
 
 # ------------------------------------------------------------------------------
 # Initials
@@ -158,24 +157,73 @@ def adjust_year(
     return birth_year
 
 
+# Handling data from the mini-app
+@bot.message_handler(content_types=['web_app_data'])
+async def handle_web_app_data(message):
+    print(message.web_app_data.data)
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=f"تاریخ انتخابی شما: {message.web_app_data.data}"
+    )
+    # """
+    # Handles the data sent from the mini-app.
+    # """
+    # received_data = message.web_app_data.data  # This is the data sent from the mini-app
+    # if received_data:
+    #     await bot.send_message(
+    #         message.chat.id,
+    #         f"تاریخ انتخابی شما: {received_data}"
+    #     )
+    # else:
+    #     await bot.send_message(
+    #         message.chat.id,
+    #         "متاسفانه داده‌ای دریافت نشد. لطفاً دوباره تلاش کنید."
+    #     )
+
+
 # ------------------------------------------------------------------------------
 # Handle Commands
 # ------------------------------------------------------------------------------
+
+
+@bot.message_handler(commands=['LCLU'])
+async def launch_miniapp(message: Message):
+    # Define the URL for the mini-app (color or birthday app)
+    COLOR_APP_URL = "https://58d7-5-160-41-126.ngrok-free.app/"  # Replace with the actual URL
+
+    # Create Inline Keyboard with one button for the desired mini-app
+    inline_keyboard = InlineKeyboardMarkup()
+    inline_keyboard.add(InlineKeyboardButton("Launch Color Picker", web_app=WebAppInfo(COLOR_APP_URL)))
+    
+    # Alternatively, if you want to launch the birthday app:
+    # inline_keyboard.add(InlineKeyboardButton("Launch Birthday Picker", web_app=WebAppInfo(BIRTHDAY_APP_URL)))
+
+    # Send the message with the inline button
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text="You triggered the /LCLU command! Now choose the mini-app:",
+        reply_markup=inline_keyboard
+    )
+
+
+
+
 # Handle /start Command
 @bot.message_handler(commands=['start'])
 async def send_welcome(message):
-    web_app_button_1 = InlineKeyboardButton(
-        text="LCLU",  # Button label
-        web_app=WebAppInfo(url="https://www.google.com")  # Mini App URL
-        # web_app=WebAppInfo(url=WEB_APP_URL)  # Mini App URL
-    )
-    # web_app_button_2 = InlineKeyboardButton(
-    #     text="Google",  # Button label
-    #     web_app=WebAppInfo(url="https://www.google.com")  # Mini App URL
+    # WEB_URL = "https://58d7-5-160-41-126.ngrok-free.app/" 
+    # WEB_URL2 = "https://www.google.com" 
+    # reply_keyboard_markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    # reply_keyboard_markup.row(
+    #     KeyboardButton("LCLU", web_app=WebAppInfo(WEB_URL)),
+    #     KeyboardButton("Google", web_app=WebAppInfo(WEB_URL2)),
     # )
-    keyboard = InlineKeyboardMarkup(row_width=2)
-    keyboard.add(web_app_button_1)
-    # keyboard.add(web_app_button_2)
+
+    # inline_keyboard_markup = InlineKeyboardMarkup()
+    # inline_keyboard_markup.row(InlineKeyboardButton('Start MiniApp', web_app=WebAppInfo(WEB_URL)))
+    
+    
+    
     await bot.send_message(
         chat_id=message.chat.id,
         text=(
@@ -187,8 +235,19 @@ async def send_welcome(message):
             "<b>\u200F /help :</b> راهنمایی و توضیحات در مورد دستورها\n\n"
         ),
         parse_mode="HTML",
-        reply_markup=keyboard
+        # reply_markup=reply_keyboard_markup
     )
+    
+    # await bot.reply_to(
+    #     message,
+    #     "Click the bottom inline button to start MiniApp",
+    #     reply_markup=inline_keyboard_markup
+    # )
+    # await bot.reply_to(
+    #     message,
+    #     "Click keyboard button to start MiniApp",
+    #     reply_markup=reply_keyboard_markup
+    # )
 
 
 # Handle /kua_number Command

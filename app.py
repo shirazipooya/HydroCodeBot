@@ -384,13 +384,17 @@ async def handle_gender_selection(call):
         text=f"📝 اطلاعات دریافت‌ شده:\n- تاریخ تولد: {birth_year}/{birth_month}/{birth_day}\n- جنسیت: {'مرد' if gender == 'male' else 'زن'}"
     )
     
+    print(kua_number)
     # Send Kua Number Result
-    await bot.send_photo(
-        chat_id=chat_id,
-        photo=open(f"./data/img/kua_{kua_number}.png", "rb"),
-        caption=f"عدد کوا شما {kua_number} می‌باشد!",
-        parse_mode="HTML"
-    )
+    file_path = f"./data/img/kua_{kua_number}.png"
+    with open(file_path, "rb") as photo:
+        print("File opened successfully")
+        await bot.send_photo(
+            chat_id=chat_id,
+            photo=photo,
+            caption=f"عدد کوا شما {kua_number} می‌باشد!",
+            parse_mode="HTML"
+        )
     
 
     # Save Information To Database

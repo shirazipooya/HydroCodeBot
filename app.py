@@ -47,6 +47,7 @@ persian_months = {
 # Load All Environment Variables
 load_dotenv()
 
+logging.basicConfig(level=logging.DEBUG)
 
 # Create A Bot
 bot = AsyncTeleBot(
@@ -398,6 +399,18 @@ async def handle_gender_selection(call):
             caption=f"عدد کوا شما {kua_number} می‌باشد!",
             parse_mode="HTML"
         )
+        
+    photo = open(file_path, "rb")
+    try:
+        print("File opened successfully 2", file_path)
+        await bot.send_photo(
+            chat_id=chat_id,
+            photo=photo,
+            caption=f"عدد کوا شما {kua_number} می‌باشد!",
+            parse_mode="HTML"
+        )
+    finally:
+        photo.close()
     
 
     # Save Information To Database

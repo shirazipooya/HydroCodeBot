@@ -384,11 +384,12 @@ async def handle_gender_selection(call):
         text=f"📝 اطلاعات دریافت‌ شده:\n- تاریخ تولد: {birth_year}/{birth_month}/{birth_day}\n- جنسیت: {'مرد' if gender == 'male' else 'زن'}"
     )
     
-    print(kua_number)
     # Send Kua Number Result
-    file_path = f"./data/img/kua_{kua_number}.png"
+    file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
+    if not os.path.exists(file_path):
+        print("File not found:", file_path)
     with open(file_path, "rb") as photo:
-        print("File opened successfully")
+        print("File opened successfully", file_path)
         await bot.send_photo(
             chat_id=chat_id,
             photo=photo,

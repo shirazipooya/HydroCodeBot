@@ -388,18 +388,18 @@ async def handle_gender_selection(call):
     
     # Send Kua Number Result
     file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
-    if not os.path.exists(file_path):
-        print("File not found:", file_path)
-    else:
-        print("File founded:", file_path)
-    with open(file_path, "rb") as photo:
-        print("File opened successfully", file_path)
-        await bot.send_photo(
-            chat_id=chat_id,
-            photo=photo,
-            caption=f"عدد کوا شما {kua_number} می‌باشد!",
-            parse_mode="HTML"
-        )
+    # if not os.path.exists(file_path):
+    #     print("File not found:", file_path)
+    # else:
+    #     print("File founded:", file_path)
+    # with open(file_path, "rb") as photo:
+    #     print("File opened successfully", file_path)
+    #     await bot.send_photo(
+    #         chat_id=chat_id,
+    #         photo=photo,
+    #         caption=f"عدد کوا شما {kua_number} می‌باشد!",
+    #         parse_mode="HTML"
+    #     )
         
     photo = open(file_path, "rb")
     try:

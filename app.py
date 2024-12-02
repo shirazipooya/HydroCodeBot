@@ -387,7 +387,7 @@ async def handle_gender_selection(call):
     # Send Kua Number Result
     await bot.send_photo(
         chat_id=chat_id,
-        photo=open(f"data/img/kua_{kua_number}.png", "rb"),
+        photo=open(f"data\\img\\kua_{kua_number}.png", "rb"),
         caption=f"عدد کوا شما {kua_number} می‌باشد!",
         parse_mode="HTML"
     )

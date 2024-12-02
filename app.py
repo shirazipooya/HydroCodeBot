@@ -388,6 +388,8 @@ async def handle_gender_selection(call):
     file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
     if not os.path.exists(file_path):
         print("File not found:", file_path)
+    else:
+        print("File founded:", file_path)
     with open(file_path, "rb") as photo:
         print("File opened successfully", file_path)
         await bot.send_photo(

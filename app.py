@@ -422,6 +422,15 @@ async def handle_gender_selection(call):
     print(2)
 
     # Save Information To Database
+    
+    print(
+        call.message.chat.id,
+        call.message.chat.first_name,
+        call.message.chat.last_name,
+        gender,
+        f"{birth_year:04d}-{birth_month:02d}-{birth_day:02d}",
+        kua_number
+    )
     set_info_to_kua(
         user_id=call.message.chat.id,
         first_name=call.message.chat.first_name,

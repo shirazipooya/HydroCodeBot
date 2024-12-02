@@ -387,7 +387,7 @@ async def handle_gender_selection(call):
     )
     
     # Send Kua Number Result
-    file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
+    # file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
     # if not os.path.exists(file_path):
     #     print("File not found:", file_path)
     # else:

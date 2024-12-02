@@ -413,11 +413,11 @@ async def handle_gender_selection(call):
     # finally:
     #     photo.close()
     print(1)
-    try:
-        with open(f"./data/img/kua_{kua_number}.png", "rb") as photo:
-            print("File opened successfully.")
-    except Exception as e:
-        print("Error opening file:", e)
+    # try:
+    #     with open(f"./data/img/kua_{kua_number}.png", "rb") as photo:
+    #         print("File opened successfully.")
+    # except Exception as e:
+    #     print("Error opening file:", e)
     
     print(2)
 

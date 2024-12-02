@@ -401,17 +401,23 @@ async def handle_gender_selection(call):
     #         parse_mode="HTML"
     #     )
         
-    photo = open(file_path, "rb")
+    # photo = open(file_path, "rb")
+    # try:
+    #     print("File opened successfully 2", file_path)
+    #     await bot.send_photo(
+    #         chat_id=chat_id,
+    #         photo=photo,
+    #         caption=f"عدد کوا شما {kua_number} می‌باشد!",
+    #         parse_mode="HTML"
+    #     )
+    # finally:
+    #     photo.close()
+    
     try:
-        print("File opened successfully 2", file_path)
-        await bot.send_photo(
-            chat_id=chat_id,
-            photo=photo,
-            caption=f"عدد کوا شما {kua_number} می‌باشد!",
-            parse_mode="HTML"
-        )
-    finally:
-        photo.close()
+        with open(f"./data/img/kua_{kua_number}.png", "rb") as photo:
+            print("File opened successfully.")
+    except Exception as e:
+        print("Error opening file:", e)
     
 
     # Save Information To Database

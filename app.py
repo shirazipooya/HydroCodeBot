@@ -90,12 +90,12 @@ def init_db():
 
 
 # Save User Info to Database
-def set_info_to_kua(
+async def set_info_to_kua(
     user_id, first_name, last_name, gender, birth_date, kua_number
 ):
     conn = sqlite3.connect(DATABASE_NAME)
     c = conn.cursor()
-    c.execute(
+    await c.execute(
         '''
             INSERT OR REPLACE INTO kua (user_id, first_name, last_name, gender, birth_date, kua_number)
             VALUES (?, ?, ?, ?, ?, ?)

@@ -412,13 +412,14 @@ async def handle_gender_selection(call):
     #     )
     # finally:
     #     photo.close()
-    
+    print(1)
     try:
         with open(f"./data/img/kua_{kua_number}.png", "rb") as photo:
             print("File opened successfully.")
     except Exception as e:
         print("Error opening file:", e)
     
+    print(2)
 
     # Save Information To Database
     set_info_to_kua(
@@ -430,10 +431,12 @@ async def handle_gender_selection(call):
         kua_number=kua_number
     )
 
+    print(3)
 
     # Clear user data after calculation
     user_kua_data.pop(chat_id, None)
     await bot.answer_callback_query(callback_query_id=call.id)
+    print(4)
 
 
 # Main entry point

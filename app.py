@@ -48,7 +48,7 @@ persian_months = {
 # Load All Environment Variables
 load_dotenv()
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 # Create A Bot
 bot = AsyncTeleBot(

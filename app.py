@@ -90,12 +90,12 @@ def init_db():
 
 
 # Save User Info to Database
-async def set_info_to_kua(
+def set_info_to_kua(
     user_id, first_name, last_name, gender, birth_date, kua_number
 ):
     conn = sqlite3.connect(DATABASE_NAME)
     c = conn.cursor()
-    await c.execute(
+    c.execute(
         '''
             INSERT OR REPLACE INTO kua (user_id, first_name, last_name, gender, birth_date, kua_number)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -130,10 +130,18 @@ def calculate_kua_number(
     
     if gender.lower() == "male":
         kua_number = 10 - year_sum
+        if kua_number == 0:
+            kua_number = 9
+        if kua_number == 5:
+            kua_number = 2
     elif gender.lower() == "female":
         kua_number = year_sum + 5
         if kua_number > 9:
             kua_number = sum(int(digit) for digit in str(kua_number))
+        if kua_number == 0:
+            kua_number = 9
+        if kua_number == 5:
+            kua_number = 8
     else:
         return -1
 
@@ -394,15 +402,19 @@ async def handle_gender_selection(call):
         print("File founded:", file_path)
     with open(file_path, "rb") as photo:
         print("File opened successfully", file_path)
-        await bot.send_photo(
+        await bot.send_document(
             chat_id=chat_id,
-            photo=photo,
+            document=photo,
             caption=f"عدد کوا شما {kua_number} می‌باشد!",
-            parse_mode="HTML"
         )
-        
+        # await bot.send_photo(
+        #     chat_id=chat_id,
+        #     photo=photo,
+        #     caption=f"عدد کوا شما {kua_number} می‌باشد!",
+        # )
 
-    await set_info_to_kua(
+
+    set_info_to_kua(
         user_id=call.message.chat.id,
         first_name=call.message.chat.first_name,
         last_name=call.message.chat.last_name,
@@ -418,12 +430,13 @@ async def handle_gender_selection(call):
 
 # Main entry point
 async def main():
+    print("Bot is running...")
     init_db()
     await set_bot_commands()
-    await bot.infinity_polling(
-        restart_on_change=True
-    )
-    print("Bot is running...")
+    await bot.polling()
+    # await bot.infinity_polling(
+    #     restart_on_change=True
+    # )
 
 if __name__ == "__main__":
     asyncio.run(main())

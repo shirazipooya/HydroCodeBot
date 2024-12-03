@@ -387,51 +387,22 @@ async def handle_gender_selection(call):
     )
     
     # Send Kua Number Result
-    # file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
-    # if not os.path.exists(file_path):
-    #     print("File not found:", file_path)
-    # else:
-    #     print("File founded:", file_path)
-    # with open(file_path, "rb") as photo:
-    #     print("File opened successfully", file_path)
-    #     await bot.send_photo(
-    #         chat_id=chat_id,
-    #         photo=photo,
-    #         caption=f"عدد کوا شما {kua_number} می‌باشد!",
-    #         parse_mode="HTML"
-    #     )
+    file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
+    if not os.path.exists(file_path):
+        print("File not found:", file_path)
+    else:
+        print("File founded:", file_path)
+    with open(file_path, "rb") as photo:
+        print("File opened successfully", file_path)
+        await bot.send_photo(
+            chat_id=chat_id,
+            photo=photo,
+            caption=f"عدد کوا شما {kua_number} می‌باشد!",
+            parse_mode="HTML"
+        )
         
-    # photo = open(file_path, "rb")
-    # try:
-    #     print("File opened successfully 2", file_path)
-    #     await bot.send_photo(
-    #         chat_id=chat_id,
-    #         photo=photo,
-    #         caption=f"عدد کوا شما {kua_number} می‌باشد!",
-    #         parse_mode="HTML"
-    #     )
-    # finally:
-    #     photo.close()
-    print(1)
-    # try:
-    #     with open(f"./data/img/kua_{kua_number}.png", "rb") as photo:
-    #         print("File opened successfully.")
-    # except Exception as e:
-    #     print("Error opening file:", e)
-    
-    print(2)
 
-    # Save Information To Database
-    
-    print(
-        call.message.chat.id,
-        call.message.chat.first_name,
-        call.message.chat.last_name,
-        gender,
-        f"{birth_year:04d}-{birth_month:02d}-{birth_day:02d}",
-        kua_number
-    )
-    set_info_to_kua(
+    await set_info_to_kua(
         user_id=call.message.chat.id,
         first_name=call.message.chat.first_name,
         last_name=call.message.chat.last_name,
@@ -440,12 +411,9 @@ async def handle_gender_selection(call):
         kua_number=kua_number
     )
 
-    print(3)
-
     # Clear user data after calculation
     user_kua_data.pop(chat_id, None)
     await bot.answer_callback_query(callback_query_id=call.id)
-    print(4)
 
 
 # Main entry point

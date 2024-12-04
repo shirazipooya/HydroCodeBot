@@ -1,10 +1,13 @@
 import os
+import json
+import asyncio
 import sqlite3
 import logging
-from datetime import datetime
+import datetime
+from sqlmodel import SQLModel, create_engine, Session
 from utils import jalali
-import asyncio
-import json
+from utils.assets import PERSIAN_MONTHS
+from models import Kua
 from dotenv import load_dotenv
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import (
@@ -24,23 +27,6 @@ from telebot.types import (
 # Temporary Storage For User Input Data
 user_kua_data = {}
 
-persian_months = {
-    1: "فروردین",
-    2: "اردیبهشت",
-    3: "خرداد",
-    4: "تیر",
-    5: "مرداد",
-    6: "شهریور",
-    7: "مهر",
-    8: "آبان",
-    9: "آذر",
-    10: "دی",
-    11: "بهمن",
-    12: "اسفند",
-}
-
-# WEB_APP_URL = "https://t.me/HydroCodeBot/SelectLandCoverType"
-# WEB_APP_URL = "https://0270-46-254-106-22.ngrok-free.app"
 
 # ------------------------------------------------------------------------------
 # Create Bot
@@ -70,50 +56,52 @@ async def set_bot_commands():
 # Database
 # ------------------------------------------------------------------------------
 DATABASE_NAME = 'database.db'
+engine = create_engine(f"sqlite:///{DATABASE_NAME}")
+SQLModel.metadata.create_all(engine)
 
-# SQLite Database Initialization
-def init_db():
-    conn = sqlite3.connect(DATABASE_NAME)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS kua (
-            user_id INTEGER PRIMARY KEY,
-            first_name TEXT,
-            last_name TEXT,
-            gender TEXT,
-            birth_date TEXT,
-            kua_number TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
+# # SQLite Database Initialization
+# def init_db():
+#     conn = sqlite3.connect(DATABASE_NAME)
+#     c = conn.cursor()
+#     c.execute('''
+#         CREATE TABLE IF NOT EXISTS kua (
+#             user_id INTEGER PRIMARY KEY,
+#             first_name TEXT,
+#             last_name TEXT,
+#             gender TEXT,
+#             birth_date TEXT,
+#             kua_number TEXT
+#         )
+#     ''')
+#     conn.commit()
+#     conn.close()
 
 
 # Save User Info to Database
 def set_info_to_kua(
     user_id, first_name, last_name, gender, birth_date, kua_number
 ):
-    conn = sqlite3.connect(DATABASE_NAME)
-    c = conn.cursor()
-    c.execute(
-        '''
-            INSERT OR REPLACE INTO kua (user_id, first_name, last_name, gender, birth_date, kua_number)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''',
-        (user_id, first_name, last_name, gender, birth_date, kua_number)
+    tmp = Kua(
+        user_id=user_id,
+        first_name=first_name,
+        last_name=last_name,
+        gender=gender,
+        birth_date=birth_date,
+        kua_number=kua_number,
     )
-    conn.commit()
-    conn.close()
+    with Session(engine) as session:
+        session.add(tmp)
+        session.commit()
 
 
-# Get User Info From Database
-def get_info_from_kua(user_id):
-    conn = sqlite3.connect(DATABASE_NAME)
-    c = conn.cursor()
-    c.execute('SELECT * FROM kua WHERE user_id = ?', (user_id,))
-    user = c.fetchone()
-    conn.close()
-    return user
+# # Get User Info From Database
+# def get_info_from_kua(user_id):
+#     conn = sqlite3.connect(DATABASE_NAME)
+#     c = conn.cursor()
+#     c.execute('SELECT * FROM kua WHERE user_id = ?', (user_id,))
+#     user = c.fetchone()
+#     conn.close()
+#     return user
 
 
 # ------------------------------------------------------------------------------
@@ -268,7 +256,7 @@ def create_inline_keyboard(
     for i, option in enumerate(options):
         row.append(
             InlineKeyboardButton(
-                text=str(option) if callback_prefix != "month_" else persian_months[option],
+                text=str(option) if callback_prefix != "month_" else PERSIAN_MONTHS[option],
                 callback_data=f"{callback_prefix}{option}")
             )
         if len(row) == columns or i == len(options) - 1:
@@ -414,6 +402,8 @@ async def handle_gender_selection(call):
         # )
 
 
+    
+    
     set_info_to_kua(
         user_id=call.message.chat.id,
         first_name=call.message.chat.first_name,
@@ -431,7 +421,7 @@ async def handle_gender_selection(call):
 # Main entry point
 async def main():
     print("Bot is running...")
-    init_db()
+    # init_db()
     await set_bot_commands()
     await bot.polling()
     # await bot.infinity_polling(

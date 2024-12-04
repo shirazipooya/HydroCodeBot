@@ -59,49 +59,23 @@ DATABASE_NAME = 'database.db'
 engine = create_engine(f"sqlite:///{DATABASE_NAME}")
 SQLModel.metadata.create_all(engine)
 
-# # SQLite Database Initialization
-# def init_db():
-#     conn = sqlite3.connect(DATABASE_NAME)
-#     c = conn.cursor()
-#     c.execute('''
-#         CREATE TABLE IF NOT EXISTS kua (
-#             user_id INTEGER PRIMARY KEY,
-#             first_name TEXT,
-#             last_name TEXT,
-#             gender TEXT,
-#             birth_date TEXT,
-#             kua_number TEXT
-#         )
-#     ''')
-#     conn.commit()
-#     conn.close()
-
 
 # Save User Info to Database
 def set_info_to_kua(
-    user_id, first_name, last_name, gender, birth_date, kua_number
+    user_id, first_name, last_name, username, gender, birth_date, kua_number
 ):
     tmp = Kua(
         user_id=user_id,
         first_name=first_name,
         last_name=last_name,
+        username=username,
         gender=gender,
         birth_date=birth_date,
         kua_number=kua_number,
     )
     with Session(engine) as session:
-        session.add(tmp)
+        session.merge(tmp)
         session.commit()
-
-
-# # Get User Info From Database
-# def get_info_from_kua(user_id):
-#     conn = sqlite3.connect(DATABASE_NAME)
-#     c = conn.cursor()
-#     c.execute('SELECT * FROM kua WHERE user_id = ?', (user_id,))
-#     user = c.fetchone()
-#     conn.close()
-#     return user
 
 
 # ------------------------------------------------------------------------------
@@ -401,6 +375,7 @@ async def handle_gender_selection(call):
         #     caption=f"عدد کوا شما {kua_number} می‌باشد!",
         # )
 
+    print(call.message.chat)
 
     
     
@@ -408,6 +383,7 @@ async def handle_gender_selection(call):
         user_id=call.message.chat.id,
         first_name=call.message.chat.first_name,
         last_name=call.message.chat.last_name,
+        username=call.message.chat.username,
         gender=gender,
         birth_date=f"{birth_year:04d}-{birth_month:02d}-{birth_day:02d}",
         kua_number=kua_number

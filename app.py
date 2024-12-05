@@ -4,9 +4,9 @@ import asyncio
 import sqlite3
 import logging
 import datetime
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import SQLModel, create_engine, Session, select
 from utils import jalali
-from utils.assets import PERSIAN_MONTHS
+from utils.assets import PERSIAN_MONTHS, is_user_member
 from models import Kua
 from dotenv import load_dotenv
 from telebot.async_telebot import AsyncTeleBot
@@ -26,6 +26,33 @@ from telebot.types import (
 # ------------------------------------------------------------------------------
 # Temporary Storage For User Input Data
 user_kua_data = {}
+
+# Your Channel
+CHANNEL_USERNAME = "weri_fum"
+
+async def send_join_channel_button(chat_id, bot):
+    """
+    Sends a message with an inline button to join the channel.
+    """
+    # Create an inline keyboard with a single button
+    markup = InlineKeyboardMarkup()
+    join_button = InlineKeyboardButton(
+        text=f"عضویت در کانال\n{CHANNEL_USERNAME}@", 
+        url=f"https://t.me/{CHANNEL_USERNAME.strip('@')}"  # Generates the URL for the channel
+    )
+    markup.add(join_button)
+
+    # Send the message with the inline button
+    await bot.send_message(
+        chat_id=chat_id,
+        text="برای استفاده از امکانات زیر نیاز است در کانال زیر عضو شوید:",
+        reply_markup=markup
+    )
+
+MAX_VISIT = 1
+
+
+
 
 
 # ------------------------------------------------------------------------------
@@ -62,7 +89,7 @@ SQLModel.metadata.create_all(engine)
 
 # Save User Info to Database
 def set_info_to_kua(
-    user_id, first_name, last_name, username, gender, birth_date, kua_number
+    user_id, first_name, last_name, username, gender, birth_date, kua_number, count_visit
 ):
     tmp = Kua(
         user_id=user_id,
@@ -72,6 +99,7 @@ def set_info_to_kua(
         gender=gender,
         birth_date=birth_date,
         kua_number=kua_number,
+        count_visit=count_visit
     )
     with Session(engine) as session:
         session.merge(tmp)
@@ -158,23 +186,37 @@ async def send_welcome(message):
 # Handle /kua_number Command
 @bot.message_handler(commands=['kua'])
 async def start_kua_calculation(message):
-    await bot.send_message(
-        chat_id=message.chat.id,
-        text=(
-            "اولین محاسبه‌گر دقیق عدد کوا با در نظر گرفتن تمامی استثنائات\n\n"
-            "عدد کوا یا عدد کی یا عدد شانس، تنها یکی از عناصر وجودی ماست که در چیدمان محیط به ما کمک می‌کند. کوانامبر نمایانگر جهات خوب و بد نشستن، ایستادن، کار کردن و خوابیدن است که به نوبه خود، روشی مجزا در فنگ‌شویی، تحت عنوان روش فنگ شویی فردی است.\n\n"
-            "برای محاسبه عدد کوا کافیست تارخ تولد و جنسیت خود را در ادامه وارد کنید.\n\n"
-        ),
-        parse_mode="HTML",
-    )
-    await send_decade_buttons(message.chat.id)
+    user_id = message.from_user.id
+    
+    with Session(engine) as session:
+        statement = select(Kua).where(Kua.user_id == user_id)
+        user = session.exec(statement).first()
+        if user and\
+            user.count_visit >= MAX_VISIT and\
+                not await is_user_member(bot=bot, user_id=user_id, chat_id=CHANNEL_USERNAME):
+                    await send_join_channel_button(
+                        chat_id=message.chat.id,
+                        bot=bot
+                    )
+        else:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text=(
+                    "اولین محاسبه‌گر دقیق عدد کوا با در نظر گرفتن تمامی استثنائات\n\n"
+                    "عدد کوا یا عدد کی یا عدد شانس، تنها یکی از عناصر وجودی ماست که در چیدمان محیط به ما کمک می‌کند. کوانامبر نمایانگر جهات خوب و بد نشستن، ایستادن، کار کردن و خوابیدن است که به نوبه خود، روشی مجزا در فنگ‌شویی، تحت عنوان روش فنگ شویی فردی است.\n\n"
+                    "برای محاسبه عدد کوا کافیست تارخ تولد و جنسیت خود را در ادامه وارد کنید.\n\n"
+                ),
+                parse_mode="HTML",
+            )
+            await send_decade_buttons(message.chat.id)
+        
 
 
 # ------------------------------------------------------------------------------
 # /kua_number Functions
 # ------------------------------------------------------------------------------
 # Send Decade Selection Buttons
-async def send_decade_buttons(chat_id):
+async def send_decade_buttons(chat_id):   
     decades = [
         "1320",
         "1330",
@@ -209,14 +251,26 @@ async def send_decade_buttons(chat_id):
 # Handle Decade Selection
 @bot.callback_query_handler(func=lambda call: call.data.startswith("decade_"))
 async def handle_decade_selection(call):
-    selected_decade = call.data.split("_")[1]
-    start_year = int(selected_decade)
-    end_year = start_year + 9
-    await send_year_buttons(
-        chat_id=call.message.chat.id,
-        years=range(start_year, end_year + 1)
-    )
-    await bot.answer_callback_query(callback_query_id=call.id)
+    chat_id=call.message.chat.id
+    with Session(engine) as session:
+        statement = select(Kua).where(Kua.user_id == chat_id)
+        user = session.exec(statement).first()
+        if user and\
+            user.count_visit >= MAX_VISIT and\
+                not await is_user_member(bot=bot, user_id=chat_id, chat_id=CHANNEL_USERNAME):
+                    await send_join_channel_button(
+                        chat_id=chat_id,
+                        bot=bot
+                    )
+        else:
+            selected_decade = call.data.split("_")[1]
+            start_year = int(selected_decade)
+            end_year = start_year + 9
+            await send_year_buttons(
+                chat_id=call.message.chat.id,
+                years=range(start_year, end_year + 1)
+            )
+            await bot.answer_callback_query(callback_query_id=call.id)
 
 
 # Create Inline Keyboard With n-column Layout
@@ -256,10 +310,22 @@ async def send_year_buttons(chat_id, years):
 # Handle Year Selection
 @bot.callback_query_handler(func=lambda call: call.data.startswith("year_"))
 async def handle_year_selection(call):
-    birth_year = int(call.data.split("_")[1])
-    user_kua_data[call.message.chat.id] = {"birth_year": birth_year }
-    await send_month_buttons(chat_id=call.message.chat.id)
-    await bot.answer_callback_query(callback_query_id=call.id)
+    chat_id=call.message.chat.id
+    with Session(engine) as session:
+        statement = select(Kua).where(Kua.user_id == chat_id)
+        user = session.exec(statement).first()
+        if user and\
+            user.count_visit >= MAX_VISIT and\
+                not await is_user_member(bot=bot, user_id=chat_id, chat_id=CHANNEL_USERNAME):
+                    await send_join_channel_button(
+                        chat_id=chat_id,
+                        bot=bot
+                    )
+        else:
+            birth_year = int(call.data.split("_")[1])
+            user_kua_data[call.message.chat.id] = {"birth_year": birth_year }
+            await send_month_buttons(chat_id=call.message.chat.id)
+            await bot.answer_callback_query(callback_query_id=call.id)
 
 
 # Send Month Selection Buttons
@@ -280,10 +346,22 @@ async def send_month_buttons(chat_id):
 # Handle Month Selection
 @bot.callback_query_handler(func=lambda call: call.data.startswith("month_"))
 async def handle_month_selection(call):
-    birth_month = int(call.data.split("_")[1])
-    user_kua_data[call.message.chat.id]["birth_month"] = birth_month
-    await send_day_buttons(chat_id=call.message.chat.id)
-    await bot.answer_callback_query(callback_query_id=call.id)
+    chat_id=call.message.chat.id
+    with Session(engine) as session:
+        statement = select(Kua).where(Kua.user_id == chat_id)
+        user = session.exec(statement).first()
+        if user and\
+            user.count_visit >= MAX_VISIT and\
+                not await is_user_member(bot=bot, user_id=chat_id, chat_id=CHANNEL_USERNAME):
+                    await send_join_channel_button(
+                        chat_id=chat_id,
+                        bot=bot
+                    )
+        else:
+            birth_month = int(call.data.split("_")[1])
+            user_kua_data[call.message.chat.id]["birth_month"] = birth_month
+            await send_day_buttons(chat_id=call.message.chat.id)
+            await bot.answer_callback_query(callback_query_id=call.id)
 
 
 # Send Day Selection Buttons
@@ -304,10 +382,22 @@ async def send_day_buttons(chat_id):
 # Handle Day Selection
 @bot.callback_query_handler(func=lambda call: call.data.startswith("day_"))
 async def handle_day_selection(call):
-    birth_day = int(call.data.split("_")[1])
-    user_kua_data[call.message.chat.id]["birth_day"] = birth_day
-    await send_gender_buttons(chat_id=call.message.chat.id)
-    await bot.answer_callback_query(callback_query_id=call.id)
+    chat_id=call.message.chat.id
+    with Session(engine) as session:
+        statement = select(Kua).where(Kua.user_id == chat_id)
+        user = session.exec(statement).first()
+        if user and\
+            user.count_visit >= MAX_VISIT and\
+                not await is_user_member(bot=bot, user_id=chat_id, chat_id=CHANNEL_USERNAME):
+                    await send_join_channel_button(
+                        chat_id=chat_id,
+                        bot=bot
+                    )
+        else:
+            birth_day = int(call.data.split("_")[1])
+            user_kua_data[call.message.chat.id]["birth_day"] = birth_day
+            await send_gender_buttons(chat_id=call.message.chat.id)
+            await bot.answer_callback_query(callback_query_id=call.id)
 
 
 # Send Gender Selection Buttons
@@ -328,70 +418,90 @@ async def send_gender_buttons(chat_id):
 # Handle Gender Selection
 @bot.callback_query_handler(func=lambda call: call.data.startswith("gender_"))
 async def handle_gender_selection(call):
-    chat_id = call.message.chat.id
-    gender = call.data.split("_")[1]
-    user_kua_data[chat_id]["gender"] = gender
-    birth_year = user_kua_data[chat_id]["birth_year"]
-    birth_month = user_kua_data[chat_id]["birth_month"]
-    birth_day = user_kua_data[chat_id]["birth_day"]
+    chat_id=call.message.chat.id
+    with Session(engine) as session:
+        statement = select(Kua).where(Kua.user_id == chat_id)
+        user = session.exec(statement).first()
+        if user and\
+            user.count_visit >= MAX_VISIT and\
+                not await is_user_member(bot=bot, user_id=chat_id, chat_id=CHANNEL_USERNAME):
+                    await send_join_channel_button(
+                        chat_id=chat_id,
+                        bot=bot
+                    )
+        else:
+            chat_id = call.message.chat.id
+            gender = call.data.split("_")[1]
+            user_kua_data[chat_id]["gender"] = gender
+            birth_year = user_kua_data[chat_id]["birth_year"]
+            birth_month = user_kua_data[chat_id]["birth_month"]
+            birth_day = user_kua_data[chat_id]["birth_day"]
 
-    # Validate The Date
-    if not is_valid_date(int(birth_year), int(birth_month), int(birth_day)):
-        await bot.send_message(
-            chat_id=chat_id, 
-            text="تاریخ وارد شده اشتباه است. لطفا تاریخ را به صورت صحیح وارد کن!",
-        )
-        await send_decade_buttons(chat_id)
-        return
+            # Validate The Date
+            if not is_valid_date(int(birth_year), int(birth_month), int(birth_day)):
+                await bot.send_message(
+                    chat_id=chat_id, 
+                    text="تاریخ وارد شده اشتباه است. لطفا تاریخ را به صورت صحیح وارد کن!",
+                )
+                await send_decade_buttons(chat_id)
+                return
 
-    # Convert
-    birth_year_g, birth_month_g, birth_day_g = jalali.Persian((int(birth_year), int(birth_month), int(birth_day))).gregorian_tuple()
-    
-    # Adjust the year and calculate the Kua number
-    adjusted_year = adjust_year(birth_year_g, birth_month_g, birth_day_g)
-    kua_number = calculate_kua_number(adjusted_year, gender)
+            # Convert
+            birth_year_g, birth_month_g, birth_day_g = jalali.Persian((int(birth_year), int(birth_month), int(birth_day))).gregorian_tuple()
+            
+            # Adjust the year and calculate the Kua number
+            adjusted_year = adjust_year(birth_year_g, birth_month_g, birth_day_g)
+            kua_number = calculate_kua_number(adjusted_year, gender)
 
-    await bot.send_message(
-        chat_id=chat_id,
-        text=f"📝 اطلاعات دریافت‌ شده:\n- تاریخ تولد: {birth_year}/{birth_month}/{birth_day}\n- جنسیت: {'مرد' if gender == 'male' else 'زن'}"
-    )
-    
-    # Send Kua Number Result
-    file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
-    if not os.path.exists(file_path):
-        print("File not found:", file_path)
-    else:
-        print("File founded:", file_path)
-    with open(file_path, "rb") as photo:
-        print("File opened successfully", file_path)
-        await bot.send_document(
-            chat_id=chat_id,
-            document=photo,
-            caption=f"عدد کوا شما {kua_number} می‌باشد!",
-        )
-        # await bot.send_photo(
-        #     chat_id=chat_id,
-        #     photo=photo,
-        #     caption=f"عدد کوا شما {kua_number} می‌باشد!",
-        # )
+            await bot.send_message(
+                chat_id=chat_id,
+                text=f"📝 اطلاعات دریافت‌ شده:\n- تاریخ تولد: {birth_year}/{birth_month}/{birth_day}\n- جنسیت: {'مرد' if gender == 'male' else 'زن'}"
+            )
+            
+            # Send Kua Number Result
+            file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
+            if not os.path.exists(file_path):
+                print("File not found:", file_path)
+            else:
+                print("File founded:", file_path)
+            with open(file_path, "rb") as photo:
+                print("File opened successfully", file_path)
+                await bot.send_document(
+                    chat_id=chat_id,
+                    document=photo,
+                    caption=f"عدد کوا شما {kua_number} می‌باشد!",
+                )
+                # await bot.send_photo(
+                #     chat_id=chat_id,
+                #     photo=photo,
+                #     caption=f"عدد کوا شما {kua_number} می‌باشد!",
+                # )
+            
+            
+            with Session(engine) as session:
+                statement = select(Kua).where(Kua.user_id == call.message.chat.id)
+                user = session.exec(statement).first()
+                if user:
+                    count_visit = user.count_visit + 1
+                else:
+                    count_visit = 1
+                    
+            
+            
+            set_info_to_kua(
+                user_id=call.message.chat.id,
+                first_name=call.message.chat.first_name,
+                last_name=call.message.chat.last_name,
+                username=call.message.chat.username,
+                gender=gender,
+                birth_date=f"{birth_year:04d}-{birth_month:02d}-{birth_day:02d}",
+                kua_number=kua_number,
+                count_visit=count_visit
+            )
 
-    print(call.message.chat)
-
-    
-    
-    set_info_to_kua(
-        user_id=call.message.chat.id,
-        first_name=call.message.chat.first_name,
-        last_name=call.message.chat.last_name,
-        username=call.message.chat.username,
-        gender=gender,
-        birth_date=f"{birth_year:04d}-{birth_month:02d}-{birth_day:02d}",
-        kua_number=kua_number
-    )
-
-    # Clear user data after calculation
-    user_kua_data.pop(chat_id, None)
-    await bot.answer_callback_query(callback_query_id=call.id)
+            # Clear user data after calculation
+            user_kua_data.pop(chat_id, None)
+            await bot.answer_callback_query(callback_query_id=call.id)
 
 
 # Main entry point
@@ -400,9 +510,9 @@ async def main():
     # init_db()
     await set_bot_commands()
     await bot.polling()
-    # await bot.infinity_polling(
-    #     restart_on_change=True
-    # )
+    await bot.infinity_polling(
+        restart_on_change=True
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())

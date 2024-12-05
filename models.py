@@ -10,3 +10,4 @@ class Kua(SQLModel, table=True):
     gender: Optional[str]
     birth_date: Optional[str]
     kua_number: Optional[str]
+    count_visit: Optional[int] = 0

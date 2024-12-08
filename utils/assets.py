@@ -1,6 +1,6 @@
 import datetime
 import lunardate
-from sqlmodel import Session
+from sqlmodel import Session, select
 from utils import jalali
 from models import Kua, Zodiac
 from telebot.async_telebot import AsyncTeleBot
@@ -74,17 +74,54 @@ CHINESE_ELEMENTS_FARSI = {
 
 
 
-async def is_user_member(bot, user_id, chat_id):
+async def is_user_member(bot, user_id, channels):
+    remaining_channels = []
     try:
-        member = await bot.get_chat_member(
-            chat_id=f"@{chat_id}",
-            user_id=user_id
-        )
-        if member.status in ['member', 'administrator', 'creator']:
-            return True
+        for cid in channels:
+            member = await bot.get_chat_member(
+                chat_id=f"@{cid}",
+                user_id=user_id
+            )
+            if member.status not in ['member', 'administrator', 'creator']:
+                remaining_channels.append(cid)
     except Exception as e:
-        print(f"Error: {e}")
-    return False
+        print(f"Error Checking Membership: {e}")
+    return len(remaining_channels) == 0, remaining_channels
+
+
+
+async def send_join_channel_button(bot, chat_id, channels):
+    markup = InlineKeyboardMarkup()
+    for cu in channels:
+        join_button = InlineKeyboardButton(
+            text=f"عضویت در کانال\n{cu}@", 
+            url=f"https://t.me/{cu.strip('@')}"  # Generates the URL for the channel
+        )
+        markup.add(join_button)
+
+    await bot.send_message(
+        chat_id=chat_id,
+        text="برای استفاده از همه امکانات نیاز است در کانال زیر عضو شوید:",
+        reply_markup=markup
+    )
+
+
+
+async def user_channel_check(engine, table, bot, message, user_id, max_visit, channels):
+    with Session(engine) as session:
+        statement = select(table).where(Kua.user_id == user_id)
+        user = session.exec(statement).first()
+        is_member, rm_channels = await is_user_member(bot=bot, user_id=user_id, channels=channels)
+        if user and\
+            user.count_visit >= max_visit and\
+                not is_member:
+                    await send_join_channel_button(
+                        bot=bot,
+                        chat_id=message.chat.id,
+                        channels=rm_channels
+                    )
+                    return False
+        return True
 
 
 
@@ -102,22 +139,6 @@ def create_inline_keyboard(options, columns=3, callback_prefix="option_"):
             markup.add(*row)
             row = []
     return markup
-
-
-
-async def send_join_channel_button(bot, chat_id, channel_username):
-    markup = InlineKeyboardMarkup()
-    join_button = InlineKeyboardButton(
-        text=f"عضویت در کانال\n{channel_username}@", 
-        url=f"https://t.me/{channel_username.strip('@')}"  # Generates the URL for the channel
-    )
-    markup.add(join_button)
-
-    await bot.send_message(
-        chat_id=chat_id,
-        text="برای استفاده از همه امکانات نیاز است در کانال زیر عضو شوید:",
-        reply_markup=markup
-    )
 
 
 

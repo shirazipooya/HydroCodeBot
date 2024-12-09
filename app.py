@@ -157,7 +157,7 @@ async def handle_name(message):
 async def handle_city(message):
     user_id = message.chat.id
     first_name = message.chat.first_name
-    last_name = message.chat.last_namechat
+    last_name = message.chat.last_name
     username = message.chat.username
     phone_number = user_data[message.chat.id]["phone_number"]
     given_name = user_data[message.chat.id]["name"]

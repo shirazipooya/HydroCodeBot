@@ -2,7 +2,7 @@ import datetime
 import lunardate
 from sqlmodel import Session, select
 from utils import jalali
-from models import Kua, Zodiac
+from models import User, Kua, Zodiac
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import (
     InlineKeyboardMarkup,
@@ -71,6 +71,19 @@ CHINESE_ELEMENTS_FARSI = {
     "Fire": "آتش",
     "Earth": "زمین",
 }
+
+def dashboard_keyboard():
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton(text="عدد شانس (کوا)", callback_data="kua_button"),
+        InlineKeyboardButton(text="زودیاک تولد", callback_data="zodiac_button")
+    )
+    markup.add(
+        InlineKeyboardButton(text="راهنما", callback_data="help_button"),
+        InlineKeyboardButton(text="شروع", callback_data="start_button"),
+        # InlineKeyboardButton(text="ویرایش اطلاعات", callback_data="update_button")
+    )
+    return markup
 
 
 async def is_user_member(bot, user_id, channels):
@@ -293,16 +306,15 @@ def insert_to_zodiac_table(
 
 
 def insert_to_user_table(
-    engine, user_id, username, phone_number, first_name, last_name, given_name, family_name, city
+    engine, user_id, username, phone_number, first_name, last_name, given_name, city
 ):
-    tmp = Zodiac(
+    tmp = User(
         user_id=user_id,
         username=username,
         phone_number=phone_number,
         first_name=first_name,
         last_name=last_name,
         given_name=given_name,
-        family_name=family_name,
         city=city,
     )
     with Session(engine) as session:

@@ -9,9 +9,11 @@ from utils.assets import (
     PERSIAN_MONTHS,
     CHINESE_SIGNS_FARSI,
     CHINESE_ELEMENTS_FARSI,
+    dashboard_keyboard,
     is_user_member,
     is_valid_date,
     user_channel_check,
+    insert_to_user_table,
     insert_to_kua_table,
     insert_to_zodiac_table,
     extract_chinese_year,
@@ -32,6 +34,7 @@ from telebot.types import (
     InlineKeyboardButton,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
 )
 
 
@@ -86,35 +89,24 @@ SQLModel.metadata.create_all(engine)
 
 @bot.message_handler(commands=['start'])
 async def start_command(message):
-
-    user_id = message.from_user.id
-
+    user_id = message.chat.id
     with Session(engine) as session:
         statement = select(User).where(User.user_id == user_id)
         existing_user = session.exec(statement).first()
-    
     if existing_user:
-        markup = InlineKeyboardMarkup()
-        markup.add(
-            InlineKeyboardButton(text="عدد شانس (کوا)", callback_data="kua_button"),
-            InlineKeyboardButton(text="زودیاک تولد", callback_data="zodiac_button")
-        )
-        markup.add(
-            InlineKeyboardButton(text="شروع", callback_data="help_button"),
-            InlineKeyboardButton(text="راهنما", callback_data="start_button"),
-            InlineKeyboardButton(text="ویرایش اطلاعات", callback_data="update_button")
-        )
+        markup = dashboard_keyboard()
         await bot.send_message(
             chat_id=message.chat.id,
             text=(
-                f"سلام، خوشحالم که دوباره تو رو میبینم {existing_user.given_name}!"
+                f"سلام، خوشحالم که دوباره تو رو میبینم {existing_user.given_name}!\n\n"
                 "اینجا چندتا گزینه وجود داره که میتونی انتخاب کنی:"
             ),
             reply_markup=markup
         )
     else:
+        user_data[message.chat.id] = "awaiting_phone"
         phone_button = KeyboardButton(
-            text="شروع کن", 
+            text="اشتراک گذاری اطلاعات", 
             request_contact=True
         )
         keyboard = ReplyKeyboardMarkup(
@@ -125,13 +117,102 @@ async def start_command(message):
         await bot.send_message(
             chat_id=message.chat.id,
             text=(
-                "💡   بیا شروع کنیم:\n"
-                "روی دکمه «شروع کن» بزن تا شماره‌ت ثبت بشه و وارد بات بشی:"
-            ),
-            reply_markup=keyboard,
+            "💡 روی دکمه «اشتراک گذاری اطلاعات» بزن تا اطلاعاتت ثبت بشه و وارد بات بشی:"
+        ),
+            parse_mode="Markdown",
+            reply_markup=keyboard
         )
 
 
+@bot.message_handler(content_types=['contact'])
+async def handle_contact(message):
+    phone_number = message.contact.phone_number
+    user_data[message.chat.id] = {
+        "state": "awaiting_name",
+        "phone_number": phone_number
+    }
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=f"سپاس از شما. لطفا اسم خودت را به فارسی این زیر بنویس:",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+
+@bot.message_handler(func=lambda message: user_data.get(message.chat.id, {}).get("state") == "awaiting_name")
+async def handle_name(message):
+    name = message.text
+    phone_number = user_data[message.chat.id]["phone_number"]    
+    user_data[message.chat.id] = {
+        "state": "awaiting_city",
+        "phone_number": phone_number,
+        "name": name,
+    }
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=f"بسیار عالی! آخرین سوال. {name} میشه بگی از کدوم شهر هستی؟",
+    )
+
+
+@bot.message_handler(func=lambda message: user_data.get(message.chat.id, {}).get("state") == "awaiting_city")
+async def handle_city(message):
+    user_id = message.from_user.id
+    first_name = message.from_user.first_name
+    last_name = message.from_user.last_name
+    username = message.from_user.username
+    phone_number = user_data[message.chat.id]["phone_number"]
+    given_name = user_data[message.chat.id]["name"]
+    city = message.text
+
+    insert_to_user_table(
+        engine=engine,
+        user_id=user_id,
+        username=username,
+        phone_number=phone_number,
+        first_name=first_name,
+        last_name=last_name,
+        given_name=given_name,
+        city=city
+    )
+    del user_data[message.chat.id]
+    markup = dashboard_keyboard()
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=f"خیلی ممنون، {given_name} عزیز از {city}! اطلاعاتت ذخیره شد. حالا می‌تونی از این گزینه‌ها استفاده کنی:",
+        reply_markup=markup
+    )
+
+# ------------------------------------------------------------------------------ #
+#                              Handle Dashboard Command
+# ------------------------------------------------------------------------------ #
+
+@bot.callback_query_handler(func=lambda call: call.data in ["kua_button", "zodiac_button", "help_button", "start_button"])
+async def handle_dashboard_callbacks(call):
+    if call.data == "kua_button":
+        if await user_channel_check(
+            engine=engine,
+            table=Kua,
+            bot=bot,
+            message=call.message,
+            user_id=call.message.chat.id,
+            max_visit=MAX_VISIT,
+            channels=CHANNELS
+        ):
+            await kua_command(call.message)
+    elif call.data == "zodiac_button":
+        if await user_channel_check(
+            engine=engine,
+            table=Kua,
+            bot=bot,
+            message=call.message,
+            user_id=call.message.chat.id,
+            max_visit=MAX_VISIT,
+            channels=CHANNELS
+        ):
+            await zodiac_command(call.message)
+    elif call.data == "help_button":
+        await start_command(call.message)
+    elif call.data == "start_button":
+        await start_command(call.message)
 
 
 
@@ -307,7 +388,7 @@ async def kua_command_handle_gender_selection(call):
         )
         
         # Send Kua Number Result
-        file_path = os.path.abspath(f"./data/img/kua_{kua_number}.png")
+        file_path = os.path.abspath(f"./data/img/kua_number_{kua_number}.png")
         if not os.path.exists(file_path):
             print("File not found:", file_path)
         else:
@@ -318,7 +399,22 @@ async def kua_command_handle_gender_selection(call):
                 chat_id=chat_id,
                 photo=photo,
                 caption=f"عدد کوا شما «{kua_number}» می‌باشد!",
-            )           
+            )  
+                 
+        # Send Kua Number Result
+        file_path_voice = os.path.abspath(f"./data/اطلاعیه_مهم.m4a")
+        if not os.path.exists(file_path_voice):
+            print("File not found:", file_path_voice)
+        else:
+            print("File founded:", file_path_voice)
+        with open(file_path_voice, "rb") as voice:
+            print("File opened successfully", file_path_voice)
+            await bot.send_audio(
+                chat_id=chat_id,
+                audio=voice,
+                caption=f"اطلاعیه بسیار مهم! حتما گوش بدید.",
+                timeout=20
+            )         
         
 
         with Session(engine) as session:
@@ -340,6 +436,12 @@ async def kua_command_handle_gender_selection(call):
         )
 
         user_kua_data.pop(chat_id, None)
+        markup = dashboard_keyboard()
+        await bot.send_message(
+            chat_id=call.message.chat.id,
+            text=f"...",
+            reply_markup=markup
+        )
         await bot.answer_callback_query(callback_query_id=call.id)
 
 
@@ -534,7 +636,26 @@ async def zodiac_command_handle_day_selection(call):
         )
 
         user_zodiac_data.pop(chat_id, None)
+        markup = dashboard_keyboard()
+        await bot.send_message(
+            chat_id=call.message.chat.id,
+            text=f"...",
+            reply_markup=markup
+        )
         await bot.answer_callback_query(callback_query_id=call.id)
+
+
+
+@bot.message_handler(commands=['user_count'])
+async def get_user_count(message):
+    with Session(engine) as session:
+        statement = select(User)
+        users = session.exec(statement).all()
+        user_count = len(users)
+    await bot.send_message(
+        message.chat.id,
+        f"تعداد کل افراد: {user_count}"
+    )
 
 
 
@@ -542,7 +663,7 @@ async def main():
     await bot.set_my_description(
         description=(     
             "👋  سلام عشق فرشته 💚😍\n\n"
-            "🤖  خیلی خوشحالم که همراه آموزش‌ها بودی. قراره با استفاده از این ربات به صورت رایگان عدد کوا و زودیاک خودت و اعضای خانوادتو محاسبه کنم و بهت بگم تا خیالت از انرژی‌های 5️⃣2️⃣0️⃣2️⃣ راحت باشه.\n\n"
+            "🤖  خیلی خوشحالم که همراه آموزش‌ها بودی. قراره با استفاده از این ربات به صورت رایگان عدد کوا و زودیاک خودت و اعضای خانوادتو محاسبه کنم و بهت بگم تا خیالت از انرژی‌های 2025 راحت باشه.\n\n"
             "🚺📅🚹   کافیه به ترتیب سال / ماه / روز تولدت و جنسیت رو انتخاب کنی تا من بهت بگم عدد شانس و زودیاکت چی هست!\n\n"
             "💡   برای شروع روی /start بزن!"
         ),
@@ -552,7 +673,7 @@ async def main():
             BotCommand("start", "صفحه اصلی بات"),
             BotCommand("kua", "عدد شانس (کوا)"),
             BotCommand("zodiac", "محاسبه زودیاک تولد"),
-            BotCommand("help", "راهنمایی و توضیحات در مورد دستورها"),
+            BotCommand("help", "راهنما"),
          ]
     )
     

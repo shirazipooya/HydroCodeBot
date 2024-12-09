@@ -52,10 +52,10 @@ user_kua_data = {}
 user_zodiac_data = {}
 
 # Your Channel Username
-CHANNELS = ["weri_fum", "HydroCodeChannel"]
+CHANNELS = ["ShiraziPooyaChannel", "shirazialianpooyachannel"]
 
 # Maximum Visit
-MAX_VISIT = 1
+MAX_VISIT = 0
 
 
 with open('utils/zodiac.json', 'r', encoding='utf-8') as file:
@@ -69,7 +69,7 @@ with open('utils/zodiac.json', 'r', encoding='utf-8') as file:
 
 # Create Bot
 bot = AsyncTeleBot(
-    token=os.getenv("HydroCodeBot_API_Token")
+    token=os.getenv("Bot_API_Token")
 )
 
 
@@ -155,10 +155,10 @@ async def handle_name(message):
 
 @bot.message_handler(func=lambda message: user_data.get(message.chat.id, {}).get("state") == "awaiting_city")
 async def handle_city(message):
-    user_id = message.from_user.id
-    first_name = message.from_user.first_name
-    last_name = message.from_user.last_name
-    username = message.from_user.username
+    user_id = message.chat.id
+    first_name = message.chat.first_name
+    last_name = message.chat.last_namechat
+    username = message.chat.username
     phone_number = user_data[message.chat.id]["phone_number"]
     given_name = user_data[message.chat.id]["name"]
     city = message.text
@@ -187,13 +187,14 @@ async def handle_city(message):
 
 @bot.callback_query_handler(func=lambda call: call.data in ["kua_button", "zodiac_button", "help_button", "start_button"])
 async def handle_dashboard_callbacks(call):
+    user_id=call.message.chat.id
     if call.data == "kua_button":
         if await user_channel_check(
             engine=engine,
             table=Kua,
             bot=bot,
             message=call.message,
-            user_id=call.message.chat.id,
+            user_id=user_id,
             max_visit=MAX_VISIT,
             channels=CHANNELS
         ):
@@ -201,10 +202,10 @@ async def handle_dashboard_callbacks(call):
     elif call.data == "zodiac_button":
         if await user_channel_check(
             engine=engine,
-            table=Kua,
+            table=Zodiac,
             bot=bot,
             message=call.message,
-            user_id=call.message.chat.id,
+            user_id=user_id,
             max_visit=MAX_VISIT,
             channels=CHANNELS
         ):
@@ -214,6 +215,32 @@ async def handle_dashboard_callbacks(call):
     elif call.data == "start_button":
         await start_command(call.message)
 
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "confirm_join")
+async def handle_confirm_join(call):
+    await bot.edit_message_reply_markup(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        reply_markup=None
+    )
+
+
+    if await user_channel_check(
+            engine=engine,
+            table=Kua,
+            bot=bot,
+            message=call.message,
+            user_id=call.message.chat.id,
+            max_visit=MAX_VISIT,
+            channels=CHANNELS
+        ):
+            markup = dashboard_keyboard()
+            await bot.send_message(
+                chat_id=call.message.chat.id,
+                text="عضویت شما تایید شد ✅. حالا می‌توانید از امکانات ربات استفاده کنید.",
+                reply_markup=markup
+            )
 
 
 # ------------------------------------------------------------------------------ #
@@ -402,7 +429,7 @@ async def kua_command_handle_gender_selection(call):
             )  
                  
         # Send Kua Number Result
-        file_path_voice = os.path.abspath(f"./data/اطلاعیه_مهم.m4a")
+        file_path_voice = os.path.abspath(f"./data/اطلاعیه_مهم.mp4")
         if not os.path.exists(file_path_voice):
             print("File not found:", file_path_voice)
         else:
@@ -413,7 +440,7 @@ async def kua_command_handle_gender_selection(call):
                 chat_id=chat_id,
                 audio=voice,
                 caption=f"اطلاعیه بسیار مهم! حتما گوش بدید.",
-                timeout=20
+                timeout=60
             )         
         
 
@@ -439,7 +466,7 @@ async def kua_command_handle_gender_selection(call):
         markup = dashboard_keyboard()
         await bot.send_message(
             chat_id=call.message.chat.id,
-            text=f"...",
+            text=f"اینجا چندتا گزینه وجود داره که میتونی انتخاب کنی:",
             reply_markup=markup
         )
         await bot.answer_callback_query(callback_query_id=call.id)
@@ -639,7 +666,7 @@ async def zodiac_command_handle_day_selection(call):
         markup = dashboard_keyboard()
         await bot.send_message(
             chat_id=call.message.chat.id,
-            text=f"...",
+            text=f"اینجا چندتا گزینه وجود داره که میتونی انتخاب کنی:",
             reply_markup=markup
         )
         await bot.answer_callback_query(callback_query_id=call.id)

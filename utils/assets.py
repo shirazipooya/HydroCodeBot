@@ -110,6 +110,12 @@ async def send_join_channel_button(bot, chat_id, channels):
             url=f"https://t.me/{cu.strip('@')}"  # Generates the URL for the channel
         )
         markup.add(join_button)
+    
+    confirm_button = InlineKeyboardButton(
+        text="عضو شدم ✅", 
+        callback_data="confirm_join"
+    )
+    markup.add(confirm_button)
 
     await bot.send_message(
         chat_id=chat_id,
@@ -121,18 +127,19 @@ async def send_join_channel_button(bot, chat_id, channels):
 
 async def user_channel_check(engine, table, bot, message, user_id, max_visit, channels):
     with Session(engine) as session:
-        statement = select(table).where(Kua.user_id == user_id)
+        statement = select(table).where(table.user_id == user_id)
         user = session.exec(statement).first()
         is_member, rm_channels = await is_user_member(bot=bot, user_id=user_id, channels=channels)
-        if user and\
-            user.count_visit >= max_visit and\
-                not is_member:
-                    await send_join_channel_button(
-                        bot=bot,
-                        chat_id=message.chat.id,
-                        channels=rm_channels
-                    )
-                    return False
+        # if user and\
+        #     user.count_visit >= max_visit and\
+        #         not is_member:
+        if not is_member:
+            await send_join_channel_button(
+                bot=bot,
+                chat_id=message.chat.id,
+                channels=rm_channels
+            )
+            return False
         return True
 
 

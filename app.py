@@ -23,11 +23,15 @@ from utils.assets import (
     day_buttons,
     gender_buttons
 )
-from models import Kua, Zodiac
+from models import User, Kua, Zodiac
 from dotenv import load_dotenv
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import (
     BotCommand,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
 )
 
 
@@ -40,12 +44,12 @@ from telebot.types import (
 load_dotenv()
 
 # Temporary Storage For User Input Data
+user_data = {}
 user_kua_data = {}
 user_zodiac_data = {}
 
 # Your Channel Username
-CHANNEL_USERNAME = ["weri_fum", "HydroCode"]
-CHANNELS = ["weri_fum", "PopiTvSerise"]
+CHANNELS = ["weri_fum", "HydroCodeChannel"]
 
 # Maximum Visit
 MAX_VISIT = 1
@@ -62,7 +66,7 @@ with open('utils/zodiac.json', 'r', encoding='utf-8') as file:
 
 # Create Bot
 bot = AsyncTeleBot(
-    token=os.getenv("WERIFUMBOT_API_TOKEN")
+    token=os.getenv("HydroCodeBot_API_Token")
 )
 
 
@@ -81,20 +85,53 @@ SQLModel.metadata.create_all(engine)
 # ------------------------------------------------------------------------------ #
 
 @bot.message_handler(commands=['start'])
-async def start_command(message):    
-    await bot.send_message(
-        chat_id=message.chat.id,
-        text=(
-            "سلام عشق فرشته 💚😍\n\n"
-            "خیلی خوشحالم که همراه آموزش‌ها بودی. قراره با استفاده از این ربات به صورت رایگان عدد کوا و زودیاک خودت و اعضای خانوادتو محاسبه کنم و بهت بگم.\n\n"
-            "لیست دستورهای ما:\n\n"
-            "تا خیالت از انرژی های ۲۰۲۵ راحت باشه!"
-            "کافیه به ترتیب سال / ماه / روز تولدت و جنسیت رو انتخاب کنی!"
-            "تا من بهت بگم عدد شانس و زودیاکت چی هست!"
-            "بیا شروع کنیم:"
-        ),
-        parse_mode="HTML",
-    )
+async def start_command(message):
+
+    user_id = message.from_user.id
+
+    with Session(engine) as session:
+        statement = select(User).where(User.user_id == user_id)
+        existing_user = session.exec(statement).first()
+    
+    if existing_user:
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton(text="عدد شانس (کوا)", callback_data="kua_button"),
+            InlineKeyboardButton(text="زودیاک تولد", callback_data="zodiac_button")
+        )
+        markup.add(
+            InlineKeyboardButton(text="شروع", callback_data="help_button"),
+            InlineKeyboardButton(text="راهنما", callback_data="start_button"),
+            InlineKeyboardButton(text="ویرایش اطلاعات", callback_data="update_button")
+        )
+        await bot.send_message(
+            chat_id=message.chat.id,
+            text=(
+                f"سلام، خوشحالم که دوباره تو رو میبینم {existing_user.given_name}!"
+                "اینجا چندتا گزینه وجود داره که میتونی انتخاب کنی:"
+            ),
+            reply_markup=markup
+        )
+    else:
+        phone_button = KeyboardButton(
+            text="شروع کن", 
+            request_contact=True
+        )
+        keyboard = ReplyKeyboardMarkup(
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+        keyboard.add(phone_button)
+        await bot.send_message(
+            chat_id=message.chat.id,
+            text=(
+                "💡   بیا شروع کنیم:\n"
+                "روی دکمه «شروع کن» بزن تا شماره‌ت ثبت بشه و وارد بات بشی:"
+            ),
+            reply_markup=keyboard,
+        )
+
+
 
 
 
@@ -296,9 +333,6 @@ async def kua_command_handle_gender_selection(call):
         insert_to_kua_table(
             engine=engine,
             user_id=call.message.chat.id,
-            first_name=call.message.chat.first_name,
-            last_name=call.message.chat.last_name,
-            username=call.message.chat.username,
             gender=gender,
             birth_date=f"{birth_year:04d}-{birth_month:02d}-{birth_day:02d}",
             kua_number=kua_number,
@@ -493,9 +527,6 @@ async def zodiac_command_handle_day_selection(call):
         insert_to_zodiac_table(
             engine=engine,
             user_id=call.message.chat.id,
-            first_name=call.message.chat.first_name,
-            last_name=call.message.chat.last_name,
-            username=call.message.chat.username,
             birth_date=f"{birth_year:04d}-{birth_month:02d}-{birth_day:02d}",
             chinese_sign=chinese_sign,
             chinese_element=chinese_element,
@@ -508,6 +539,14 @@ async def zodiac_command_handle_day_selection(call):
 
 
 async def main():
+    await bot.set_my_description(
+        description=(     
+            "👋  سلام عشق فرشته 💚😍\n\n"
+            "🤖  خیلی خوشحالم که همراه آموزش‌ها بودی. قراره با استفاده از این ربات به صورت رایگان عدد کوا و زودیاک خودت و اعضای خانوادتو محاسبه کنم و بهت بگم تا خیالت از انرژی‌های 5️⃣2️⃣0️⃣2️⃣ راحت باشه.\n\n"
+            "🚺📅🚹   کافیه به ترتیب سال / ماه / روز تولدت و جنسیت رو انتخاب کنی تا من بهت بگم عدد شانس و زودیاکت چی هست!\n\n"
+            "💡   برای شروع روی /start بزن!"
+        ),
+    )
     await bot.set_my_commands(
          commands=[
             BotCommand("start", "صفحه اصلی بات"),

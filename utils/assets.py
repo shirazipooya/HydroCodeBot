@@ -73,7 +73,6 @@ CHINESE_ELEMENTS_FARSI = {
 }
 
 
-
 async def is_user_member(bot, user_id, channels):
     remaining_channels = []
     try:
@@ -264,13 +263,10 @@ async def gender_buttons(bot, chat_id, callback_prefix="gender_"):
 
 
 def insert_to_kua_table(
-    engine, user_id, first_name, last_name, username, gender, birth_date, kua_number, count_visit
+    engine, user_id, gender, birth_date, kua_number, count_visit
 ):
     tmp = Kua(
         user_id=user_id,
-        first_name=first_name,
-        last_name=last_name,
-        username=username,
         gender=gender,
         birth_date=birth_date,
         kua_number=kua_number,
@@ -282,17 +278,32 @@ def insert_to_kua_table(
 
 
 def insert_to_zodiac_table(
-    engine, user_id, first_name, last_name, username, birth_date, chinese_sign, chinese_element, count_visit
+    engine, user_id, birth_date, chinese_sign, chinese_element, count_visit
 ):
     tmp = Zodiac(
         user_id=user_id,
-        first_name=first_name,
-        last_name=last_name,
-        username=username,
         birth_date=birth_date,
         chinese_sign=chinese_sign,
         chinese_element=chinese_element,
         count_visit=count_visit
+    )
+    with Session(engine) as session:
+        session.merge(tmp)
+        session.commit()
+
+
+def insert_to_user_table(
+    engine, user_id, username, phone_number, first_name, last_name, given_name, family_name, city
+):
+    tmp = Zodiac(
+        user_id=user_id,
+        username=username,
+        phone_number=phone_number,
+        first_name=first_name,
+        last_name=last_name,
+        given_name=given_name,
+        family_name=family_name,
+        city=city,
     )
     with Session(engine) as session:
         session.merge(tmp)

@@ -106,7 +106,7 @@ async def start_command(message):
     else:
         user_data[message.chat.id] = "awaiting_phone"
         phone_button = KeyboardButton(
-            text="اشتراک گذاری اطلاعات", 
+            text="ارسال شماره", 
             request_contact=True
         )
         keyboard = ReplyKeyboardMarkup(
@@ -117,7 +117,7 @@ async def start_command(message):
         await bot.send_message(
             chat_id=message.chat.id,
             text=(
-            "💡 روی دکمه «اشتراک گذاری اطلاعات» بزن تا اطلاعاتت ثبت بشه و وارد بات بشی:"
+            "💡 روی دکمه «ارسال شماره» بزن تا وارد بات بشی:"
         ),
             parse_mode="Markdown",
             reply_markup=keyboard
@@ -641,7 +641,22 @@ async def zodiac_command_handle_day_selection(call):
                 # f"عددهای شانس شما: {zodiac_data[chinese_sign]["lucky_numbers"]}\n\n"
                 # f"رنگ‌های شانس شما: {zodiac_data[chinese_sign]["lucky_colors"]}\n\n"
             )
-        )        
+        )
+
+                # Send Kua Number Result
+        file_path_voice = os.path.abspath(f"./data/اطلاعیه_مهم.mp4")
+        if not os.path.exists(file_path_voice):
+            print("File not found:", file_path_voice)
+        else:
+            print("File founded:", file_path_voice)
+        with open(file_path_voice, "rb") as voice:
+            print("File opened successfully", file_path_voice)
+            await bot.send_audio(
+                chat_id=chat_id,
+                audio=voice,
+                caption=f"اطلاعیه بسیار مهم! حتما گوش بدید.",
+                timeout=60
+            )      
         
 
         with Session(engine) as session:

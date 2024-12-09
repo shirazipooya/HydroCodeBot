@@ -52,7 +52,7 @@ user_kua_data = {}
 user_zodiac_data = {}
 
 # Your Channel Username
-CHANNELS = ["helekhobmalkhob", "HydroCodeChannel"]
+CHANNELS = ["weri_fum", "HydroCodeChannel"]
 
 # Maximum Visit
 MAX_VISIT = 1

@@ -52,7 +52,8 @@ user_kua_data = {}
 user_zodiac_data = {}
 
 # Your Channel Username
-CHANNELS = ["helekhobmalkhob", "aliravanbakhsh1"]
+# CHANNELS = ["helekhobmalkhob", "aliravanbakhsh1"]
+CHANNELS = ["aliravanbakhsh1"]
 
 # Maximum Visit
 MAX_VISIT = 0

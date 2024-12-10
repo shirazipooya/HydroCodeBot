@@ -79,7 +79,7 @@ bot = AsyncTeleBot(
 # Database
 # ------------------------------------------------------------------------------
 DATABASE_NAME = 'database.db'
-engine = create_engine(f"sqlite:///{DATABASE_NAME}", pool_size=100, max_overflow=100)
+engine = create_engine(f"sqlite:///{DATABASE_NAME}", pool_size=500, max_overflow=500)
 SQLModel.metadata.create_all(engine)
 
 

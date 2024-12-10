@@ -701,6 +701,7 @@ async def get_user_count(message):
 
 @bot.message_handler(commands=['sql'])
 async def get_user_count(message):
+    print(message)
     if message.text:
         name = message.text
     else:

@@ -105,8 +105,14 @@ async def is_user_member(bot, user_id, channels):
 async def send_join_channel_button(bot, chat_id, channels):
     markup = InlineKeyboardMarkup()
     for cu in channels:
+        if cu == "helekhobmalkhob":
+            text = "حال خوب = مال خوب"
+        elif cu == "aliravanbakhsh1":
+            text = "+۵۰ میلیون درآمد از اینستاگرام"
+        else:
+            text = "عضویت در کانال"
         join_button = InlineKeyboardButton(
-            text=f"عضویت در کانال\n{cu}@", 
+            text=text, 
             url=f"https://t.me/{cu.strip('@')}"  # Generates the URL for the channel
         )
         markup.add(join_button)

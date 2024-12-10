@@ -195,24 +195,27 @@ def extract_chinese_year(
 
 
 def calculate_kua_number(
+    kua_data,
     birth_year: int,
     gender: str
 ) -> int:
     
-    year_sum = sum(map(int, str(birth_year)[-2:]))
-
-    while year_sum > 9:
-        year_sum = sum(map(int, str(year_sum)))
+    kua_number = kua_data.get(gender, {}).get(str(birth_year), None)
     
-    kua_number = 0
+    # year_sum = sum(map(int, str(birth_year)[-2:]))
 
-    if gender.lower() == "male":
-        kua_number = 10 - year_sum
-        kua_number = 9 if kua_number == 0 else (2 if kua_number == 5 else kua_number)
-    elif gender.lower() == "female":
-        kua_number = year_sum + 5
-        kua_number = sum(map(int, str(kua_number))) if kua_number > 9 else kua_number
-        kua_number = 9 if kua_number == 0 else (8 if kua_number == 5 else kua_number)
+    # while year_sum > 9:
+    #     year_sum = sum(map(int, str(year_sum)))
+    
+    # kua_number = 0
+
+    # if gender.lower() == "male":
+    #     kua_number = 10 - year_sum
+    #     kua_number = 9 if kua_number == 0 else (2 if kua_number == 5 else kua_number)
+    # elif gender.lower() == "female":
+    #     kua_number = year_sum + 5
+    #     kua_number = sum(map(int, str(kua_number))) if kua_number > 9 else kua_number
+    #     kua_number = 9 if kua_number == 0 else (8 if kua_number == 5 else kua_number)
 
     return kua_number
 

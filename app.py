@@ -62,6 +62,9 @@ MAX_VISIT = 0
 with open('utils/zodiac.json', 'r', encoding='utf-8') as file:
     zodiac_data = json.load(file)
 
+with open('utils/kua.json', 'r', encoding='utf-8') as file:
+    kua_data = json.load(file)
+
 
 
 # ------------------------------------------------------------------------------
@@ -402,12 +405,13 @@ async def kua_command_handle_gender_selection(call):
 
         birth_year_g, birth_month_g, birth_day_g = jalali.Persian((int(birth_year), int(birth_month), int(birth_day))).gregorian_tuple()
         
-        chinese_year = extract_chinese_year(
-            date_string=f"{birth_year_g:04d}-{birth_month_g:02d}-{birth_day_g:02d}"
-        )
+        # chinese_year = extract_chinese_year(
+        #     date_string=f"{birth_year_g:04d}-{birth_month_g:02d}-{birth_day_g:02d}"
+        # )
 
         kua_number = calculate_kua_number(
-            birth_year=chinese_year,
+            kua_data=kua_data,
+            birth_year=birth_year_g,
             gender=gender
         )
 

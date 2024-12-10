@@ -445,6 +445,17 @@ async def kua_command_handle_gender_selection(call):
                 timeout=60
             )         
         
+         
+        await bot.send_message(
+            chat_id=chat_id,
+            text=(
+                "حالا اگه میخوای با استفاده از اطلاعاتی که کسب کردی سال 2025 که سال مار هست و با سرعت همه چی اتفاق میافته! تو هم با سرعت به سمت پیشرفت و درآمد قدم بگذاری !\n\n"    
+                "همین الان به آیدی زیر پیام بده تا راهنماییت کنم.\n\n"      
+                "@fereshtehelp\n"      
+                "🔺🔺🔺🔺🔺\n"      
+            ),
+            parse_mode="HTML",
+        )
 
         with Session(engine) as session:
             statement = select(Kua).where(Kua.user_id == call.message.chat.id)
@@ -658,7 +669,19 @@ async def zodiac_command_handle_day_selection(call):
                 audio=voice,
                 caption=f"اطلاعیه بسیار مهم! حتما گوش بدید.",
                 timeout=60
-            )      
+            )
+
+
+        await bot.send_message(
+            chat_id=chat_id,
+            text=(
+                "حالا اگه میخوای با استفاده از اطلاعاتی که کسب کردی سال 2025 که سال مار هست و با سرعت همه چی اتفاق میافته! تو هم با سرعت به سمت پیشرفت و درآمد قدم بگذاری !\n\n"    
+                "همین الان به آیدی زیر پیام بده تا راهنماییت کنم.\n\n"      
+                "@fereshtehelp\n"      
+                "🔺🔺🔺🔺🔺\n"      
+            ),
+            parse_mode="HTML",
+        )    
         
 
         with Session(engine) as session:

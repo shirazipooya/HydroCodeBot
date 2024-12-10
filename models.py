@@ -1,5 +1,6 @@
+from datetime import datetime, timezone
 from typing import Optional
-from sqlmodel import SQLModel, Field, Session, create_engine
+from sqlmodel import SQLModel, Field
 
 
 class User(SQLModel, table=True):
@@ -10,6 +11,8 @@ class User(SQLModel, table=True):
     last_name: Optional[str]
     given_name: Optional[str]
     city: Optional[str]
+    create_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 
 
 class Kua(SQLModel, table=True):

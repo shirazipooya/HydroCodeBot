@@ -701,15 +701,18 @@ async def get_user_count(message):
 
 @bot.message_handler(commands=['sql'])
 async def get_user_count(message):
-    print(message)
-    if message.text:
-        name = message.text
+    if message.text == "/sql":
+        name = "given_name"
     else:
-        name = "given_name"        
-    with Session(engine) as session:
-        result = session.exec(text(f"SELECT {name} FROM user"))
-        results = [row[0] for row in result.fetchall()]
-        results_text = "\n".join(results) + "\n"
+        name = message.text.replace("/sql ", "")
+    try:
+        with Session(engine) as session:
+            result = session.exec(text(f"SELECT {name} FROM user"))
+            results = [row[0] for row in result.fetchall()]
+            results_text = "\n".join(results) + "\n"
+    except:
+        results_text = "دستور اشتباه!"
+        
     await bot.send_message(
         chat_id=message.chat.id,
         text=results_text

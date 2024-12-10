@@ -125,7 +125,10 @@ async def send_join_channel_button(bot, chat_id, channels):
 
     await bot.send_message(
         chat_id=chat_id,
-        text="برای استفاده از همه امکانات نیاز است در کانال زیر عضو شوید:",
+        text=(
+            "برای استفاده از همه امکانات نیاز است در کانال های زیر عضو شوید:\n\n",        
+            "🛑  ابتدا روی هر کانال بزنید و عضو آن کانال شوید سپس به ربات برگردید و روی عضو شدم بزنید.",        
+        ),
         reply_markup=markup
     )
 

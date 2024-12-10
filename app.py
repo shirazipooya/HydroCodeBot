@@ -1,7 +1,7 @@
 import os
 import json
 import asyncio
-from sqlmodel import SQLModel, create_engine, Session, select
+from sqlmodel import SQLModel, create_engine, Session, select, text
 from utils import jalali
 from utils.assets import (
     CHINESE_SIGNS,
@@ -263,7 +263,7 @@ async def kua_command(message):
             chat_id=message.chat.id,
             text=(
                 "اولین محاسبه‌گر دقیق عدد کوا با در نظر گرفتن تمامی استثنائات\n\n"
-                "عدد کوا یا عدد کی یا عدد شانس، تنها یکی از عناصر وجودی ماست که در چیدمان محیط به ما کمک می‌کند. کوانامبر نمایانگر جهات خوب و بد نشستن، ایستادن، کار کردن و خوابیدن است که به نوبه خود، روشی مجزا در فنگ‌شویی، تحت عنوان روش فنگ شویی فردی است.\n\n"
+                "عدد کوا یا عدد شانس، علاوه بر نشان دادن عنصر وجودی ما‌، در چیدمان محیط به ما کمک می‌کند. کوانامبر نمایانگر جهات خوب و بد نشستن، ایستادن، کار کردن و خوابیدن است که به نوبه خود، روشی مجزا در فنگ‌شویی، تحت عنوان روش فنگ شویی فردی است.\n\n"
                 "برای محاسبه عدد کوا کافیست تارخ تولد و جنسیت خود را در ادامه وارد کنید.\n\n"
             ),
             parse_mode="HTML",
@@ -697,6 +697,21 @@ async def get_user_count(message):
     await bot.send_message(
         message.chat.id,
         f"تعداد کل افراد: {user_count}"
+    )
+
+@bot.message_handler(commands=['sql'])
+async def get_user_count(message):
+    if message.text:
+        name = message.text
+    else:
+        name = "given_name"        
+    with Session(engine) as session:
+        result = session.exec(text(f"SELECT {name} FROM user"))
+        results = [row[0] for row in result.fetchall()]
+        results_text = "\n".join(results) + "\n"
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=results_text
     )
 
 

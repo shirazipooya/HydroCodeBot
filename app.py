@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import asyncio
 from sqlmodel import SQLModel, create_engine, Session, select, text
@@ -27,6 +28,7 @@ from utils.assets import (
 )
 from models import User, Kua, Zodiac
 from dotenv import load_dotenv
+from telebot import apihelper
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import (
     BotCommand,
@@ -747,7 +749,37 @@ async def get_user_count(message):
         text=results_text
     )
 
-
+@bot.message_handler(commands=['send_message'])
+async def send_message(message):
+    with Session(engine) as session:
+        result = session.exec(text(f"SELECT user_id FROM user"))
+        results = [row[0] for row in result.fetchall()]
+        print(results)
+    message_text = (
+        "همین الان بیا منتظرم !\n\n"
+        "این لایو کد ثروت و جایزه داره\n\n"
+        "سال 2025 سال توعه!\n\n"
+        "https://www.instagram.com/fengshui.by.fereshte?igsh=NmNraXp1Y3dtZzZx"
+        "\n\nفرشته خسروی"
+    )
+    n = 0
+    for chat_id in results:
+        try:
+            await bot.send_message(
+                chat_id=chat_id,
+                text=message_text
+            )
+            n += 1
+            time.sleep(0.2)
+        except apihelper.ApiException as e:
+            print(f"Error for {chat_id}: {e}")
+        except Exception as e:
+            print(f"Unexpected error for {chat_id}: {e}")
+            
+    await bot.send_message(
+        chat_id=message.chat.id,
+        text=f"Send Message to {n} Users!"
+    )
 
 async def main():
     await bot.set_my_description(
@@ -769,7 +801,7 @@ async def main():
     
     try:
         print("Bot is running ...")
-        await bot.polling()
+        await bot.polling(non_stop=True)
     except Exception as e:
         print(f"An error occurred: {e}")
         await asyncio.sleep(5)

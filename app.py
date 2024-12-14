@@ -162,6 +162,7 @@ async def handle_name(message):
 @bot.message_handler(func=lambda message: user_data.get(message.chat.id, {}).get("state") == "awaiting_city")
 async def handle_city(message):
     user_id = message.chat.id
+    print("Start: ", user_id)
     first_name = message.chat.first_name
     try:
         last_name = message.chat.get('last_name', None)
@@ -174,7 +175,13 @@ async def handle_city(message):
     phone_number = user_data[message.chat.id]["phone_number"]
     given_name = user_data[message.chat.id]["name"]
     city = message.text
-
+    print("First Name: ", first_name)
+    print("Last Name: ", last_name)
+    print("Username: ", username)
+    print("Phone Number: ", phone_number)
+    print("Given Name: ", given_name)
+    print("City: ", city)
+    print("End: ", user_id)
     insert_to_user_table(
         engine=engine,
         user_id=user_id,

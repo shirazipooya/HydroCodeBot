@@ -162,9 +162,15 @@ async def handle_name(message):
 @bot.message_handler(func=lambda message: user_data.get(message.chat.id, {}).get("state") == "awaiting_city")
 async def handle_city(message):
     user_id = message.chat.id
-    first_name = message.chat.get('first_name', None)
-    last_name = message.chat.get('last_name', None)
-    username = message.chat.get('username', None)
+    first_name = message.chat.first_name
+    try:
+        last_name = message.chat.get('last_name', None)
+    except:
+        last_name = None
+    try:
+        username = message.chat.get('username', None)
+    except:
+        username = None
     phone_number = user_data[message.chat.id]["phone_number"]
     given_name = user_data[message.chat.id]["name"]
     city = message.text

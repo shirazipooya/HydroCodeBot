@@ -735,7 +735,7 @@ async def zodiac_command_handle_day_selection(call):
 
 
 
-@bot.message_handler(commands=['user_count'])
+@bot.message_handler(commands=['users_count'])
 async def get_user_count(message):
     with Session(engine) as session:
         statement = select(User)
@@ -746,7 +746,7 @@ async def get_user_count(message):
         f"تعداد کل افراد: {user_count}"
     )
 
-@bot.message_handler(commands=['user_table'])
+@bot.message_handler(commands=['users_table'])
 async def get_user_table(message):
     if message.chat.id in [int(7690029281), str(7690029281)] or message.chat.id in [int(52260445), str(52260445)]:
         try:

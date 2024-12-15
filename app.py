@@ -4,10 +4,8 @@ import time
 import json
 import asyncio
 import pandas as pd
-from pytz import timezone
 from sqlmodel import SQLModel, create_engine, Session, select, text
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.schedulers.background import BackgroundScheduler
 from utils import jalali
 from utils.assets import (
     CHINESE_SIGNS,
@@ -865,22 +863,19 @@ async def main():
             BotCommand("help", "راهنما"),
          ]
     )
-    scheduler = BackgroundScheduler()
-    # scheduler = AsyncIOScheduler(
-    #     job_defaults={
-    #         'misfire_grace_time': 30,
-    #         'coalesce': False,
-    #         'max_instances': 1  
-    #     }
-    # )
-    tehran_tz = timezone('Asia/Tehran')
+    scheduler = AsyncIOScheduler(
+        job_defaults={
+            'misfire_grace_time': 30,
+            'coalesce': False,
+            'max_instances': 1  
+        }
+    )
     scheduler.add_job(
         func=report_user_count,
         trigger='cron',
-        hour='0, 1, 6, 12, 18',
-        minute='0, 30',
+        hour='0, 6, 12, 18',
+        minute='30',
         second=0,
-        timezone=tehran_tz
     )
     scheduler.start()    
     try:

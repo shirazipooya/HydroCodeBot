@@ -1,7 +1,9 @@
 import os
+from io import BytesIO
 import time
 import json
 import asyncio
+import pandas as pd
 from sqlmodel import SQLModel, create_engine, Session, select, text
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from utils import jalali
@@ -743,6 +745,31 @@ async def get_user_count(message):
         message.chat.id,
         f"تعداد کل افراد: {user_count}"
     )
+
+@bot.message_handler(commands=['user_table'])
+async def get_user_table(message):
+    if message.chat.id in [int(7690029281), str(7690029281)] or message.chat.id in [int(52260445), str(52260445)]:
+        try:
+            with Session(engine) as session:
+                statement = select(User)
+                users = session.exec(statement).all()
+                df = pd.DataFrame([user.model_dump() for user in users])
+
+            with BytesIO() as buffer:
+                df.to_excel(buffer, index=False, engine='xlsxwriter')
+                buffer.seek(0)
+
+                await bot.send_document(
+                    chat_id=52260445,
+                    document=buffer,
+                    caption="فایل اکسل دیتابیس کاربران",
+                    filename="Users.xlsx"
+                )
+        except Exception as e:
+            await bot.send_message(
+                chat_id=52260445,
+                text=f"خطایی رخ داده است: {e}"
+            )
 
 @bot.message_handler(commands=['sql'])
 async def get_user_count(message):

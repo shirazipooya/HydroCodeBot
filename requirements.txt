@@ -7,3 +7,5 @@ matplotlib==3.9.2
 sqlmodel==0.0.22
 lunardate==0.2.2
 APScheduler==3.11.0
+pandas==2.2.3
+XlsxWriter==3.2.0

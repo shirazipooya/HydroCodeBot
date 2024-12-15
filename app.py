@@ -761,9 +761,8 @@ async def get_user_table(message):
 
                 await bot.send_document(
                     chat_id=52260445,
-                    document=buffer,
+                    document=("Users.xlsx", buffer),
                     caption="فایل اکسل دیتابیس کاربران",
-                    filename="Users.xlsx"
                 )
         except Exception as e:
             await bot.send_message(

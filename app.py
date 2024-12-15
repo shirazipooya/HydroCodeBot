@@ -804,7 +804,7 @@ async def report_user_count():
     await bot.send_message(
         chat_id='7690029281',
         text=f"تعداد کل افراد وارد شده به بات:\n\n {user_count} نفر",
-        parse_mode="html"
+        parse_mode="HTML"
     )
 
 
@@ -829,7 +829,7 @@ async def main():
     scheduler.add_job(
         func=report_user_count,
         trigger='cron',
-        minute=5,
+        minute=15,
         second=0
     )
     scheduler.start()    

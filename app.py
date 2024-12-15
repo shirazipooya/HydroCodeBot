@@ -829,7 +829,7 @@ async def main():
     scheduler.add_job(
         func=report_user_count,
         trigger='cron',
-        minute=15,
+        minute=20,
         second=0
     )
     scheduler.start()    

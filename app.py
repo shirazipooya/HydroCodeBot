@@ -827,9 +827,21 @@ async def report_user_count():
         statement = select(User)
         users = session.exec(statement).all()
         user_count = len(users)
+    with Session(engine) as session:
+        query = select(Kua.count_visit)
+        results = session.exec(query).all()
+        kua_count_visi = sum(int(kua.count_visit) for kua in results if kua.count_visit is not None and kua.count_visit.isdigit())
+    with Session(engine) as session:
+        query = select(Zodiac.count_visit)
+        results = session.exec(query).all()
+        zodiac_count_visi = sum(int(zodiac.count_visit) for zodiac in results if zodiac.count_visit is not None and zodiac.count_visit.isdigit())
     await bot.send_message(
         chat_id=52260445,
-        text=f"تعداد کل افراد وارد شده به بات:\n\n {user_count} نفر",
+        text=(
+            f"تعداد کل افراد وارد شده به بات:\n\n {user_count} نفر"
+            f"تعداد محاسبه عدد کوا: \n\n {kua_count_visi} دفعه"
+            f"تعداد محاسبه زودیاک: \n\n {zodiac_count_visi} دفعه"
+        ),
         parse_mode="HTML"
     )
 
@@ -861,8 +873,8 @@ async def main():
     scheduler.add_job(
         func=report_user_count,
         trigger='cron',
-        hour='0, 6, 12, 18',
-        minute='30',
+        # hour='0, 6, 12, 18',
+        minute='30, 50',
         second=0
     )
     scheduler.start()    

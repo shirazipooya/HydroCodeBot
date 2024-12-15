@@ -170,7 +170,7 @@ async def handle_city(message):
     except:
         last_name = None
     try:
-        username = message.chat.get.username
+        username = message.chat.username
     except:
         username = None
     phone_number = user_data[message.chat.id]["phone_number"]
@@ -825,11 +825,18 @@ async def main():
             BotCommand("help", "راهنما"),
          ]
     )
-    scheduler = AsyncIOScheduler()
+    scheduler = AsyncIOScheduler(
+        job_defaults={
+            'misfire_grace_time': 30,
+            'coalesce': False,
+            'max_instances': 1  
+        }
+    )
     scheduler.add_job(
         func=report_user_count,
         trigger='cron',
-        minute=35,
+        hour='0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23',
+        minute='0, 30',
         second=0
     )
     scheduler.start()    

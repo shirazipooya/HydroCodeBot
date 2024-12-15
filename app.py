@@ -3,6 +3,7 @@ import time
 import json
 import asyncio
 from sqlmodel import SQLModel, create_engine, Session, select, text
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from utils import jalali
 from utils.assets import (
     CHINESE_SIGNS,
@@ -794,6 +795,19 @@ async def send_message(message):
         text=f"Send Message to {n} Users!"
     )
 
+
+async def report_user_count():
+    with Session(engine) as session:
+        statement = select(User)
+        users = session.exec(statement).all()
+        user_count = len(users)
+    await bot.send_message(
+        chat_id='your_chat_id',
+        text=f"تعداد کل افراد وارد شده به بات:\n\n {user_count} نفر",
+        parse_mode="html"
+    )
+
+
 async def main():
     await bot.set_my_description(
         description=(     
@@ -811,7 +825,14 @@ async def main():
             BotCommand("help", "راهنما"),
          ]
     )
-    
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        func=report_user_count,
+        trigger='cron',
+        minute=0,
+        second=0
+    )
+    scheduler.start()    
     try:
         print("Bot is running ...")
         await bot.polling(non_stop=True)

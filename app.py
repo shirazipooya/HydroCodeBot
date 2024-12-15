@@ -835,7 +835,7 @@ async def main():
     scheduler.start()    
     try:
         print("Bot is running ...")
-        await bot.polling(non_stop=True)
+        await bot.polling()
     except Exception as e:
         print(f"An error occurred: {e}")
         await asyncio.sleep(5)

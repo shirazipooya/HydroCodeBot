@@ -802,7 +802,7 @@ async def report_user_count():
         users = session.exec(statement).all()
         user_count = len(users)
     await bot.send_message(
-        chat_id='your_chat_id',
+        chat_id='7690029281',
         text=f"تعداد کل افراد وارد شده به بات:\n\n {user_count} نفر",
         parse_mode="html"
     )

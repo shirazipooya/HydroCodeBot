@@ -166,11 +166,11 @@ async def handle_city(message):
     print("Start: ", user_id)
     first_name = message.chat.first_name
     try:
-        last_name = message.chat.get('last_name', None)
+        last_name = message.chat.last_name
     except:
         last_name = None
     try:
-        username = message.chat.get('username', None)
+        username = message.chat.get.username
     except:
         username = None
     phone_number = user_data[message.chat.id]["phone_number"]

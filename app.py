@@ -838,9 +838,9 @@ async def report_user_count():
     await bot.send_message(
         chat_id=52260445,
         text=(
-            f"تعداد کل افراد وارد شده به بات:\n\n {user_count} نفر\n"
-            f"تعداد محاسبه عدد کوا: \n\n {kua_count_visi} دفعه\n"
-            f"تعداد محاسبه زودیاک: \n\n {zodiac_count_visi} دفعه\n"
+            f"تعداد کل افراد وارد شده به بات:\n {user_count} نفر\n\n"
+            f"تعداد محاسبه عدد کوا: \n {kua_count_visi} دفعه\n\n"
+            f"تعداد محاسبه زودیاک: \n {zodiac_count_visi} دفعه\n\n"
         ),
         parse_mode="HTML"
     )
@@ -873,8 +873,8 @@ async def main():
     scheduler.add_job(
         func=report_user_count,
         trigger='cron',
-        # hour='0, 6, 12, 18',
-        # minute='30, 50',
+        hour='0, 6, 12, 18',
+        minute='30',
         second=0
     )
     scheduler.start()    

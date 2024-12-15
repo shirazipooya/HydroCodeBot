@@ -874,7 +874,7 @@ async def main():
         func=report_user_count,
         trigger='cron',
         # hour='0, 6, 12, 18',
-        minute='30, 50',
+        # minute='30, 50',
         second=0
     )
     scheduler.start()    
